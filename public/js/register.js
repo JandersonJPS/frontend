@@ -176,3 +176,100 @@ document.addEventListener('DOMContentLoaded', function() {
         return re.test(email);
     }
 });
+
+        // Constante com a URL da API
+        const API_URL = 'http://127.0.0.1:8080/api/usuarios'; // endpoint base
+
+   
+        // Função para cadastrar usuário
+        async function cadastrarUsuario(dados) {
+            const res = await fetch(`${API_URL}/registrar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
+            });
+
+            if (!res.ok) {
+                let errorMessage = 'Erro na requisição';
+                try {
+                    const err = await res.json();
+                    errorMessage = err.message || errorMessage;
+                } catch {
+                    // resposta não é JSON, ignora
+                }
+                throw new Error(errorMessage);
+            }
+
+            return res.json();
+        }
+
+        // Event listener para o formulário
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+
+            // Obter dados do formulário
+            const data = {
+                nome: form.name.value,
+                email: form.email.value,
+                cpf: form.cpf.value.replace(/\D/g, ''),
+                telefone: form.phone.value.replace(/\D/g, ''),
+                senha: form.password.value,
+                confirmarSenha: form.confirmPassword.value,
+                agreeTerms: form.agreeTerms.checked
+            };
+
+            // Validação básica - senhas coincidem
+            if (data.senha !== data.confirmarSenha) {
+                alert('As senhas não coincidem!');
+                return;
+            }
+
+            // Validação - termos aceitos (já garantido pelo required no HTML)
+            if (!document.getElementById('agreeTerms').checked) {
+                alert('Você deve aceitar os termos de serviço!');
+                return;
+            }
+
+            try {
+                // Chamada à API
+                const response = await cadastrarUsuario(data);
+                console.log('Usuário cadastrado com sucesso:', response);
+                alert('Cadastro realizado com sucesso!');
+
+                // Redirecionar para login após cadastro bem-sucedido
+                window.location.href = 'login.html';
+            } catch (error) {
+                console.error('Erro ao cadastrar usuário:', error);
+                alert('Erro ao cadastrar: ' + error.message);
+            }
+        });
+
+        // Máscara para CPF (opcional)
+        document.getElementById('cpf').addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, '');
+
+            if (value.length > 3) value = value.replace(/^(\d{3})/, '$1.');
+            if (value.length > 7) value = value.replace(/^(\d{3})\.(\d{3})/, '$1.$2.');
+            if (value.length > 11) value = value.replace(/^(\d{3})\.(\d{3})\.(\d{3})/, '$1.$2.$3-');
+
+            e.target.value = value.substring(0, 14);
+        });
+
+        // Máscara para telefone (opcional)
+        document.getElementById('phone').addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, '');
+            let formattedValue = '';
+
+            if (value.length > 0) {
+                formattedValue = '(' + value.substring(0, 2);
+            }
+            if (value.length > 2) {
+                formattedValue += ') ' + value.substring(2, 7);
+            }
+            if (value.length > 7) {
+                formattedValue += '-' + value.substring(7, 11);
+            }
+
+            e.target.value = formattedValue;
+        });
